@@ -1,6 +1,5 @@
 import re
 import numpy as np
-import tqdm
 import pandas as pd
 def Create_Vocab(Alloys_List):
     """Given a List of Alloys returns the Metal Vocabulary"""
@@ -48,6 +47,13 @@ def Preproc_Elements(DataFrame,key):
     Padded_Alloy_Vec = Pad_Data(Alloy_Vec) #X
     return Padded_Alloy_Vec
 
+def Tf_Convert(Inp_List):
+    """Converts a List of List to a Numpy Array"""
+    Output = np.array([np.array(i) for i in Inp_List])
+    return Output        
 if __name__ == "__main__":
     DF = pd.read_csv("G:\Work Related\Mettalurgy\Data\EM Dataset.csv")
     Output = Preproc_Elements(DF,"Metallic glasses (at. %)")
+    Np_Output = Tf_Convert(Output)
+    
+    
