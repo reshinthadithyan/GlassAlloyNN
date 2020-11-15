@@ -1,6 +1,8 @@
 import re
 import numpy as np
 import pandas as pd
+def Check_Hyb(Element):
+    return "".join([(" "+i if i.isupper() else i) for i in Element]).strip().split()
 def Create_Vocab(Alloys_List):
     """Given a List of Alloys returns the Metal Vocabulary"""
     Metal_List = ["PAD"]
@@ -8,7 +10,13 @@ def Create_Vocab(Alloys_List):
         Alloy = Parse_Alloy(Alloy)
         for Metal in Alloy:
             if Metal not in Metal_List and Metal != "": #and "(" not in Metal and "/" not in Metal:
-                Metal_List.append(Metal)
+                if len(Check_Hyb(Metal)) == 1:
+                    Metal_List.append(Metal)
+                else:
+                    for Element in Check_Hyb(Metal):
+                        if Element not in Metal_List:
+                            #print(Element)
+                            Metal_List.append(Element)
     Metal_Dictionary_Vocab = {Metal_List[i]:i for i in range(len(Metal_List))}
     return Metal_Dictionary_Vocab
 
@@ -18,7 +26,6 @@ def Vocabulize_Alloy(Alloy_List,Metal_Dict):
     Output_Num =  []
     for Alloy in Alloy_List:
         Alloy = Parse_Alloy(Alloy)
-        print(Alloy)
         Need = [Metal_Dict[i] for i in Alloy if i!=""]
         Output_Num.append(Need)
     return Output_Num
@@ -27,8 +34,8 @@ def Vocabulize_Alloy(Alloy_List,Metal_Dict):
 def Parse_Alloy(Alloy_String):
     """Parsing an Alloy to elementary blocks."""
     Output = re.sub(r'[0-9\(+\)+\.+\/]', ' ', Alloy_String)
-    Output_Entities = [i for i in Output.split(" ")if i != " "]
-    return Output_Entities
+    Output_Entities = [Check_Hyb(i) for i in Output.split(" ")if i != " "]
+    return sum(Output_Entities,[])
 
 def Pad_Data(Dataset):
     """Given a List of List Pad based on the max length of the Sublist"""
@@ -45,9 +52,7 @@ def Pad_Data(Dataset):
 def Preproc_Elements(DataFrame,key):
     """Given DataFrame and the key column of Alloys, it numericalizes and pads it with the maximum seq length"""
     Alloy_List = DataFrame[key].values.tolist()
-    print(Alloy_List[:10])
     Vocabulary = Create_Vocab(Alloy_List)
-    print(Vocabulary)
     Alloy_Vec = Vocabulize_Alloy(Alloy_List,Vocabulary)
     Padded_Alloy_Vec = Pad_Data(Alloy_Vec) #X
     return Padded_Alloy_Vec,Vocabulary
@@ -59,6 +64,5 @@ def Tf_Convert(Inp_List):
 if __name__ == "__main__":
     DF = pd.read_csv("G:\Work Related\Mettalurgy\Data\EM Dataset.csv")
     Output,Vocab = Preproc_Elements(DF,"Metallic glasses (at. %)")
-    print(Vocab)
     Np_Output = Tf_Convert(Output)    
     
