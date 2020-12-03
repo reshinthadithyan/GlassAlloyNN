@@ -1,6 +1,7 @@
 import re
 import numpy as np
 import pandas as pd
+import pickle
 def Check_Hyb(Element):
     return "".join([(" "+i if i.isupper() else i) for i in Element]).strip().split()
 def Create_Vocab(Alloys_List):
@@ -60,7 +61,16 @@ def Preproc_Elements(DataFrame,key):
 def Tf_Convert(Inp_List):
     """Converts a List of List to a Numpy Array"""
     Output = np.array([np.array(i) for i in Inp_List])
-    return Output        
+    return Output     
+def Save_Mod(Vocab,Model,Folder_Path):
+    """Saves Model in a directory
+    Args : Vocab - Variable containing the Vocabulary
+           Model - Variable containing the trained Model
+           Folder_Path - Folder_Path in which Mod.h5 and vocab.pkl will be saved."""
+    Model.save(Folder_Path+"Mod.h5")
+    with open(Folder_Path+"vocab.pkl", 'wb') as handle:
+        pickle.dump(Vocab, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    return "Sucessfully Saved Model and Vocab in"+Folder_Path
 if __name__ == "__main__":
     DF = pd.read_csv("G:\Work Related\Mettalurgy\Data\EM Dataset.csv")
     Output,Vocab = Preproc_Elements(DF,"Metallic glasses (at. %)")
