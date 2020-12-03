@@ -45,10 +45,13 @@ def Parse_Alloy(Alloy_String):
     return sum(Output_Entities, [])
 
 
-def Pad_Data(Dataset):
+def Pad_Data(Dataset,pad_len=None):
     """Given a List of List Pad based on the max length of the Sublist"""
     Pad_Dataset = []
-    Pad_Length = max(len(i) for i in Dataset)
+    if not pad_len:
+        Pad_Length = max(len(i) for i in Dataset)
+    else:
+        Pad_Length = pad_len
     for i in Dataset:
         if len(i) < Pad_Length:
             Need = i + [0] * (Pad_Length - len(i))
@@ -65,6 +68,12 @@ def Preproc_Elements(DataFrame, key):
     Alloy_Vec = Vocabulize_Alloy(Alloy_List, Vocabulary)
     Padded_Alloy_Vec = Pad_Data(Alloy_Vec)  # X
     return Padded_Alloy_Vec, Vocabulary
+
+def Preproc_Elements_Load(Alloy_List,Vocabulary,Pad_Len):
+    """Given list of alloys, vocabulary and the pad length, converts output to list vectors"""
+    Alloy_Vec = Vocabulize_Alloy(Alloy_List, Vocabulary)
+    Padded_Alloy_Vec = Pad_Data(Alloy_Vec,pad_len=Pad_Len)
+    return Padded_Alloy_Vec
 
 
 def Tf_Convert(Inp_List):
@@ -86,7 +95,8 @@ def Save_Mod(Vocab, Model, Folder_Path):
 
 def load_folder(Folder_Path):
     """given a folder path, loads and returns model
-    Args : Folder_Path containing mod.h5 and vocab.pkl"""
+    Args : Folder_Path containing mod.h5 and vocab.pkl
+    Returns: mod.h5 and vocab.pkl"""
     from tensorflow.keras.models import load_model
     import pickle
 
@@ -94,6 +104,7 @@ def load_folder(Folder_Path):
     with open(Folder_Path + "/vocab.pkl", "rb") as handle:
         vocab = pickle.load(handle)
     return vocab, loaded_model
+
 
 
 if __name__ == "__main__":
