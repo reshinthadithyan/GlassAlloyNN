@@ -6,8 +6,7 @@ import pickle
 
 def Check_Hyb(Element):
     return "".join([(" " + i if i.isupper() else i) for i in Element]).strip().split()
-
-
+ 
 def Create_Vocab(Alloys_List):
     """Given a List of Alloys returns the Metal Vocabulary"""
     Metal_List = ["PAD"]
@@ -26,8 +25,8 @@ def Create_Vocab(Alloys_List):
                             Metal_List.append(Element)
     Metal_Dictionary_Vocab = {Metal_List[i]: i for i in range(len(Metal_List))}
     return Metal_Dictionary_Vocab
-
-
+ 
+ 
 def Vocabulize_Alloy(Alloy_List, Metal_Dict):
     """Given a List of Alloys Vocabulizes the Alloys present"""
     Output_Num = []
@@ -36,15 +35,15 @@ def Vocabulize_Alloy(Alloy_List, Metal_Dict):
         Need = [Metal_Dict[i] for i in Alloy if i != ""]
         Output_Num.append(Need)
     return Output_Num
-
-
+ 
+ 
 def Parse_Alloy(Alloy_String):
     """Parsing an Alloy to elementary blocks."""
     Output = re.sub(r"[0-9\(+\)+\.+\/]", " ", Alloy_String)
     Output_Entities = [Check_Hyb(i) for i in Output.split(" ") if i != " "]
     return sum(Output_Entities, [])
-
-
+ 
+ 
 def Pad_Data(Dataset,pad_len=None):
     """Given a List of List Pad based on the max length of the Sublist"""
     Pad_Dataset = []
@@ -58,30 +57,56 @@ def Pad_Data(Dataset,pad_len=None):
             Pad_Dataset.append(Need)
         else:
             Pad_Dataset.append(i)
-    return Pad_Dataset
+    return Pad_Dataset,Pad_Length
 
-
+def parse_num(alloy,num):
+    if ")"  in alloy:
+        y=alloy.split(")")
+        for i in y:
+          if "(" not  in i:
+            p=((re.sub(r"[a-zA-z\(+\)+\.+\/]", " ", i)).split())
+            p=list(map(int,p))
+          if "(" in i:
+            q=((re.sub(r"[a-zA-z\(+\)+\.+\/]", " ", i)).split())
+            q=list(map(int,q))
+        q=[_*p[0] for _ in q]
+        num=(p +q)
+    return num 
+ 
+def Extract_num(alloy_list,pad_len):
+  num_val=[]
+  for alloy in alloy_list:
+    num=(re.sub(r"[a-zA-z\(+\)\+\/]", " ", alloy)).split()
+    num=parse_num(alloy,num)
+    sum_num = sum(list(map(float,num)))
+    num= [float(i)/sum_num for i in num]
+    num_val.append(num)
+    
+  return num_val
+ 
 def Preproc_Elements(DataFrame, key):
     """Given DataFrame and the key column of Alloys, it numericalizes and pads it with the maximum seq length"""
     Alloy_List = DataFrame[key].values.tolist()
     Vocabulary = Create_Vocab(Alloy_List)
     Alloy_Vec = Vocabulize_Alloy(Alloy_List, Vocabulary)
-    Padded_Alloy_Vec = Pad_Data(Alloy_Vec)  # X
-    return Padded_Alloy_Vec, Vocabulary
-
+    Padded_Alloy_Vec,pad_len = Pad_Data(Alloy_Vec)  # X
+    num_comp = Extract_num(Alloy_List,None)
+    padded_num_comp,pad_len = Pad_Data(num_comp)
+    return Padded_Alloy_Vec, Vocabulary,padded_num_comp
+ 
 def Preproc_Elements_Load(Alloy_List,Vocabulary,Pad_Len):
     """Given list of alloys, vocabulary and the pad length, converts output to list vectors"""
     Alloy_Vec = Vocabulize_Alloy(Alloy_List, Vocabulary)
     Padded_Alloy_Vec = Pad_Data(Alloy_Vec,pad_len=Pad_Len)
     return Padded_Alloy_Vec
-
-
+ 
+ 
 def Tf_Convert(Inp_List):
     """Converts a List of List to a Numpy Array"""
     Output = np.array([np.array(i) for i in Inp_List])
     return Output
-
-
+ 
+ 
 def Save_Mod(Vocab, Model, Folder_Path):
     """Saves Model in a directory
     Args : Vocab - Variable containing the Vocabulary
@@ -91,24 +116,24 @@ def Save_Mod(Vocab, Model, Folder_Path):
     with open(Folder_Path + "vocab.pkl", "wb") as handle:
         pickle.dump(Vocab, handle, protocol=pickle.HIGHEST_PROTOCOL)
     return "Sucessfully Saved Model and Vocab in" + Folder_Path
-
-
+ 
+ 
 def load_folder(Folder_Path):
     """given a folder path, loads and returns model
     Args : Folder_Path containing mod.h5 and vocab.pkl
     Returns: mod.h5 and vocab.pkl"""
     from tensorflow.keras.models import load_model
     import pickle
-
+ 
     loaded_model = load_model(Folder_Path + "/mod.h5")
     with open(Folder_Path + "/vocab.pkl", "rb") as handle:
         vocab = pickle.load(handle)
     return vocab, loaded_model
-
-
-
 if __name__ == "__main__":
-    Path = ""
+    Path = "/home/reshinth-adith/reshinth/work/glass_alloy/GlassAlloyNN/Data/Em_data_corr.csv"
     DF = pd.read_csv(Path)
-    Output, Vocab = Preproc_Elements(DF, "Metallic glasses (at. %)")
+    Output, Vocab,num_list = Preproc_Elements(DF, "Metallic glasses (at. %)")
     Np_Output = Tf_Convert(Output)
+    num_list = Tf_Convert(num_list)
+    Np_shear= np.array([float(i) for i in DF["Shear Modulus (GPa)"].values.tolist()])
+    print(Np_Output.shape,num_list.shape,Np_shear.shape)
